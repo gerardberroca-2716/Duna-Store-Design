@@ -54,6 +54,7 @@ export interface VirtualModelsState {
 export interface AdCreatorState {
   selectedTemplateId: string | null;
   assetFile: File | null;
+  modelCriteria: ModelCriteria;
   generatedVideos: { a: string | null; b: string | null };
   error: string | null;
 }

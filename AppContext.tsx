@@ -1,5 +1,5 @@
 import React, { createContext, useReducer, useContext, useEffect } from 'react';
-import { AppState, AppAction, Asset, MagicCleanerState, VirtualModelsState, AdCreatorState, BackgroundCreatorState } from './types';
+import { AppState, AppAction, Asset, MagicCleanerState, VirtualModelsState, AdCreatorState, BackgroundCreatorState, ModelCriteria } from './types';
 
 const initialMagicCleanerState: MagicCleanerState = {
   originalFiles: [],
@@ -22,6 +22,12 @@ const initialVirtualModelsState: VirtualModelsState = {
 const initialAdCreatorState: AdCreatorState = {
   selectedTemplateId: null,
   assetFile: null,
+  modelCriteria: {
+    gender: 'Femenino',
+    age: '26-40 años',
+    skinColor: 'Latina',
+    hairColor: 'Castaño',
+  },
   generatedVideos: { a: null, b: null },
   error: null,
 };

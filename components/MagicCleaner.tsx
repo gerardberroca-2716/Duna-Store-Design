@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useAppContext } from '../AppContext';
-import { fileToBase64 } from '../services/utils';
+import { processLimpiadorMagico } from '../services/n8nService';
 import { Asset, ProcessedImage } from '../types';
 import { Spinner } from './ui';
 
@@ -37,6 +37,7 @@ const MagicCleaner: React.FC = () => {
     const [isProcessing, setIsProcessing] = useState(false);
     const [selectedBg, setSelectedBg] = useState<string | File>(backgroundOptions.estudio[0]);
     const [activeBgTab, setActiveBgTab] = useState<BgTab>('estudio');
+    const [error, setError] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const customBgInputRef = useRef<HTMLInputElement>(null);
 
@@ -77,6 +78,7 @@ const MagicCleaner: React.FC = () => {
         const newFiles = Array.from(files);
         const initialProcessedImages: ProcessedImage[] = newFiles.map(file => ({ originalName: file.name, status: 'idle' }));
         dispatch({ type: 'UPDATE_MAGIC_CLEANER_STATE', payload: { originalFiles: newFiles, processedImages: initialProcessedImages } });
+        setError(null);
     };
 
     const handleCustomBgSelected = (files: File[]) => {
@@ -108,36 +110,52 @@ const MagicCleaner: React.FC = () => {
         event.stopPropagation();
     };
 
-    const handleCleanImages = () => {
+    const handleCleanImages = async () => {
+        setError(null);
+        if (selectedBg instanceof File) {
+            setError("Los fondos personalizados no son compatibles en este momento. Por favor, selecciona un fondo predefinido.");
+            return;
+        }
+        if (originalFiles.length === 0) {
+            setError("Por favor, sube al menos una imagen de producto.");
+            return;
+        }
+
         setIsProcessing(true);
-        const loadingImages = processedImages.map(p => p.status === 'idle' ? { ...p, status: 'loading' as 'loading' } : p);
+        const loadingImages = originalFiles.map(file => ({ originalName: file.name, status: 'loading' as const }));
         dispatch({ type: 'UPDATE_MAGIC_CLEANER_STATE', payload: { processedImages: loadingImages } });
 
-        // MOCK: Simulate API processing
-        setTimeout(() => {
-            const newProcessedImages: ProcessedImage[] = [];
-            originalFiles.forEach(file => {
-                const imageUrl = URL.createObjectURL(file);
-                newProcessedImages.push({
-                    originalName: file.name,
-                    status: 'success',
-                    url: imageUrl
-                });
+        const processingPromises = originalFiles.map(async (file): Promise<ProcessedImage> => {
+            try {
+                const response = await processLimpiadorMagico(
+                    file,
+                    selectedBg,
+                    `limpiado-${file.name.split('.')[0]}-${Date.now()}`
+                );
+                
+                if (response.success && response.driveUrl) {
+                     const newAsset: Asset = { 
+                        id: uuidv4(), 
+                        name: `Limpio - ${file.name.split('.')[0]}`, 
+                        type: 'image', 
+                        url: response.driveUrl, 
+                        thumbnailUrl: URL.createObjectURL(file), 
+                        createdAt: new Date().toISOString() 
+                    };
+                    dispatch({ type: 'ADD_ASSET', payload: newAsset });
+                    return { originalName: file.name, status: 'success', url: response.driveUrl };
+                } else {
+                    return { originalName: file.name, status: 'failed', error: response.message };
+                }
+            } catch (err) {
+                 return { originalName: file.name, status: 'failed', error: err instanceof Error ? err.message : 'Error desconocido' };
+            }
+        });
+        
+        const newProcessedImages = await Promise.all(processingPromises);
 
-                const newAsset: Asset = { 
-                    id: uuidv4(), 
-                    name: `Limpio - ${file.name.split('.')[0]}`, 
-                    type: 'image', 
-                    url: imageUrl, 
-                    thumbnailUrl: imageUrl, 
-                    createdAt: new Date().toISOString() 
-                };
-                dispatch({ type: 'ADD_ASSET', payload: newAsset });
-            });
-            
-            dispatch({ type: 'UPDATE_MAGIC_CLEANER_STATE', payload: { processedImages: newProcessedImages } });
-            setIsProcessing(false);
-        }, 2000); // 2 second delay
+        dispatch({ type: 'UPDATE_MAGIC_CLEANER_STATE', payload: { processedImages: newProcessedImages } });
+        setIsProcessing(false);
     };
     
     const isBgSelected = (bg: string | File) => {
@@ -232,6 +250,7 @@ const MagicCleaner: React.FC = () => {
                             <span className="truncate">Buscar en el Dispositivo</span>
                         </div>
                     </div>
+                    {error && <div className="p-3 bg-red-100 dark:bg-red-900/50 border border-red-400/50 rounded-lg text-red-700 dark:text-red-300 text-sm">{error}</div>}
                     <button onClick={handleCleanImages} disabled={originalFiles.length === 0 || isProcessing} className="flex min-w-[84px] w-full cursor-pointer items-center justify-center overflow-hidden rounded-lg h-11 px-5 bg-primary text-white text-base font-bold leading-normal tracking-[0.015em] hover:bg-primary-dark transition-colors flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed">
                         <span className="truncate">{isProcessing ? 'Procesando...' : `Limpiar ${originalFiles.length} Imagen(es)`}</span>
                     </button>
@@ -281,8 +300,13 @@ const MagicCleaner: React.FC = () => {
                         {processedImages.length > 0 ? (
                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
                                 {processedImages.map((image, index) => (
-                                    <div key={index} className="aspect-square rounded bg-slate-100 dark:bg-white/5 flex items-center justify-center">
-                                        {image.status === 'success' && image.url && <img src={image.url} alt={`Resultado ${index + 1}`} className="w-full h-full object-contain" />}
+                                    <div key={index} className="aspect-square rounded bg-slate-100 dark:bg-white/5 flex items-center justify-center p-2">
+                                        {image.status === 'success' && image.url && (
+                                            <a href={image.url} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center justify-center gap-2 text-center text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300 transition-colors w-full h-full bg-green-50 dark:bg-green-500/10 rounded-md">
+                                                <span className="material-symbols-outlined text-4xl">download_for_offline</span>
+                                                <span className="text-xs font-bold">Ver y Descargar</span>
+                                            </a>
+                                        )}
                                         {image.status === 'loading' && <Spinner message="" />}
                                         {image.status === 'failed' && <span className="material-symbols-outlined text-red-500 text-4xl" title={image.error}>error</span>}
                                         {image.status === 'idle' && <span className="material-symbols-outlined text-4xl text-slate-300 dark:text-white/20">hourglass_empty</span>}

@@ -22,8 +22,15 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
   };
 
   return (
-    <div className="relative flex h-screen w-full flex-col items-center justify-center p-4 bg-background-light dark:bg-background-dark">
-       <div className="absolute inset-0 z-0 opacity-50" style={{backgroundImage: 'radial-gradient(#e4096a 0.5px, transparent 0.5px), radial-gradient(#0891b2 0.5px, transparent 0.5px)', backgroundSize: '20px 20px', backgroundPosition: '0 0, 10px 10px'}}></div>
+    <div className="relative flex h-screen w-full flex-col items-center justify-center p-4 bg-background-light dark:bg-background-dark overflow-hidden">
+       {/* New Faint Background Image */}
+       <div
+        className="absolute inset-0 z-0 bg-cover bg-center opacity-30 dark:opacity-20 scale-105"
+        style={{ backgroundImage: 'url("https://res.cloudinary.com/dlrwldqhr/image/upload/v1762492221/Wan_Image_Remix_dame_esta_imagen_en_mejor_calidad_PicCopilot_1a2ac_h7hdcy.png")' }}
+      ></div>
+      {/* Overlay */}
+       <div className="absolute inset-0 z-0" style={{backgroundImage: 'radial-gradient(rgba(228, 9, 106, 0.1) 0.5px, transparent 0.5px), radial-gradient(rgba(8, 145, 178, 0.05) 0.5px, transparent 0.5px)', backgroundSize: '20px 20px', backgroundPosition: '0 0, 10px 10px'}}></div>
+      
       <div className="relative z-10 w-full max-w-md rounded-xl bg-surface-light/80 dark:bg-surface-dark/80 backdrop-blur-lg border border-slate-200/50 dark:border-slate-800/50 shadow-2xl shadow-primary/10 dark:shadow-black/20">
         <div className="flex flex-col items-center justify-center p-8 md:p-12 gap-8">
           

@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { useAppContext } from '../AppContext';
 import { fileToBase64 } from '../services/utils';
 import { Asset, ModelCriteria } from '../types';
-import { Spinner } from './ui';
+import { Spinner, CustomSelect } from './ui';
 
 const femaleModels = [
     { id: 'f1', url: 'https://res.cloudinary.com/dlrwldqhr/image/upload/v1762547116/Gemini_Generated_Image_eq5my2eq5my2eq5m_puzefi.png' },
@@ -47,16 +47,6 @@ const backgrounds = {
 const ageRanges = ['5-12 años', '13-17 años', '18-25 años', '26-40 años', '41-60 años', '60+ años'];
 const skinColors = ['Clara', 'Latina', 'Morena', 'Asiática'];
 const hairColors = ['Castaño', 'Negro', 'Rubio', 'Pelirrojo', 'Blanco/Gris'];
-
-const CustomSelect = ({ label, name, value, onChange, options, ...props }: { label: string, name: keyof ModelCriteria, value: string, onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void, options: string[] } & React.SelectHTMLAttributes<HTMLSelectElement>) => (
-    <div className="flex flex-col gap-1.5">
-        <label className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark" htmlFor={name}>{label}</label>
-        <select name={name} id={name} value={value} onChange={onChange} className="w-full bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/20 rounded-lg text-sm px-3 py-2 text-text-primary-light dark:text-white focus:ring-primary focus:border-primary hover:bg-slate-200 dark:hover:bg-white/10 transition-colors appearance-none" style={{backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23e6e6e6' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundPosition: 'right 0.5rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.5em 1.5em', paddingRight: '2.5rem'}} {...props}>
-            {options.map(opt => <option key={opt}>{opt}</option>)}
-        </select>
-    </div>
-);
-
 
 const VirtualModels: React.FC = () => {
     const { state, dispatch } = useAppContext();
